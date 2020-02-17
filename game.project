@@ -1,0 +1,39 @@
+[bootstrap]
+main_collection = /game/collections/controller.collectionc
+render = /orthographic/render/orthographic.renderc
+
+[script]
+shared_state = 1
+
+[display]
+width = 960
+height = 540
+
+[android]
+input_method = KeyEvent
+package = com.cybercrap.bit.riders
+immersive_mode = 1
+app_icon_36x36 = /assets/images/cars/cochesOGArtc_01.png
+app_icon_48x48 = /assets/images/cars/cochesOGArtc_01.png
+app_icon_72x72 = /assets/images/cars/cochesOGArtc_01.png
+app_icon_96x96 = /assets/images/cars/cochesOGArtc_01.png
+app_icon_144x144 = /assets/images/cars/cochesOGArtc_01.png
+app_icon_192x192 = /assets/images/cars/cochesOGArtc_01.png
+
+[project]
+title = BitRiders
+dependencies = https://github.com/britzl/defold-orthographic/archive/master.zip,https://github.com/subsoap/defsave/archive/master.zip,https://github.com/britzl/defold-input/archive/2.2.0.zip,https://github.com/subsoap/chrono/archive/master.zip,https://github.com/britzl/defold-screenshot/archive/master.zip,https://github.com/subsoap/chip-sounds/archive/master.zip,https://github.com/britzl/defold-sharing/archive/master.zip
+write_log = 1
+version = 0.61
+
+[input]
+game_binding = /in/bindings/all.input_bindingc
+gamepads = /in/gamepads/in.gamepadsc
+
+[graphics]
+default_texture_min_filter = nearest
+default_texture_mag_filter = nearest
+
+[html5]
+splash_image = /assets/images/cars/cochesOGArtc_04.png
+

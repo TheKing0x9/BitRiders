@@ -1,0 +1,14 @@
+local MIN_Y = -tonumber(sys.get_config("display.height"))/2 or 540/2
+local MAX_Y = tonumber(sys.get_config("display.height"))/2 or 540/2
+
+function update(self, dt)
+	local pos = go.get_position()
+	local y = pos.y
+	if y > MAX_Y then
+		y = MAX_Y
+	end
+
+	local z = math.max(0 + math.abs(y) / MAX_Y, 0)
+	pos.z = z
+	go.set_position(pos)
+end

@@ -1,0 +1,175 @@
+animations {
+  id: "ai_talk"
+  images {
+    image: "/assets/images/ai/ai_talk1.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_talk2.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_talk3.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_talk4.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_talk5.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_talk6.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_talk7.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_talk8.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_talk9.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_talk10.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_talk11.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_talk12.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_talk13.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_talk14.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_talk15.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_talk16.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_talk17.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_talk18.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_talk19.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_talk20.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_talk21.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_talk22.png"
+  }
+  playback: PLAYBACK_LOOP_FORWARD
+  fps: 12
+  flip_horizontal: 0
+  flip_vertical: 0
+}
+animations {
+  id: "ai_in"
+  images {
+    image: "/assets/images/ai/ai_in1.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_in2.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_in3.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_in4.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_in5.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_in6.png"
+  }
+  playback: PLAYBACK_ONCE_FORWARD
+  fps: 12
+  flip_horizontal: 0
+  flip_vertical: 0
+}
+animations {
+  id: "ai_out"
+  images {
+    image: "/assets/images/ai/ai_in1.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_in2.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_in3.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_in4.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_in5.png"
+  }
+  images {
+    image: "/assets/images/ai/ai_in6.png"
+  }
+  playback: PLAYBACK_ONCE_BACKWARD
+  fps: 12
+  flip_horizontal: 0
+  flip_vertical: 0
+}
+animations {
+  id: "computer"
+  images {
+    image: "/assets/images/computer/computer1.png"
+  }
+  images {
+    image: "/assets/images/computer/computer2.png"
+  }
+  images {
+    image: "/assets/images/computer/computer3.png"
+  }
+  images {
+    image: "/assets/images/computer/computer4.png"
+  }
+  images {
+    image: "/assets/images/computer/computer5.png"
+  }
+  images {
+    image: "/assets/images/computer/computer6.png"
+  }
+  images {
+    image: "/assets/images/computer/computer7.png"
+  }
+  images {
+    image: "/assets/images/computer/computer8.png"
+  }
+  images {
+    image: "/assets/images/computer/computer9.png"
+  }
+  images {
+    image: "/assets/images/computer/computer10.png"
+  }
+  images {
+    image: "/assets/images/computer/computer11.png"
+  }
+  images {
+    image: "/assets/images/computer/computer12.png"
+  }
+  images {
+    image: "/assets/images/computer/computer13.png"
+  }
+  images {
+    image: "/assets/images/computer/computer14.png"
+  }
+  playback: PLAYBACK_LOOP_FORWARD
+  fps: 12
+  flip_horizontal: 0
+  flip_vertical: 0
+}
+margin: 0
+extrude_borders: 2
+inner_padding: 0

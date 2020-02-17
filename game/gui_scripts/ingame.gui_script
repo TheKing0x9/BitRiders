@@ -1,0 +1,217 @@
+local button = require "in.button"
+local data = require "game.modules.data"
+local gamestate = require "game.modules.gamestate"
+local cars = require "game.modules.cars"
+local areas = require "game.modules.areas"
+
+local PAUSE = hash("pause")
+local SHOW_INFO = hash("show_info")
+local SET_COLOR = hash("set_color")
+
+local UP = 270
+local DOWN = -UP
+local CENTER = 0
+local LEFT = -540
+
+
+local INFO_BAR_POSITIONS = {
+	--enter = vmath.vector3(1448, 823, 0),
+	enter = vmath.vector3(1123, 637, 0),
+	screen_up = vmath.vector3(521, 290, 0),
+	screen_down = vmath.vector3(455, 250, 0),
+	exit = vmath.vector3(-635, -380, 0)
+}
+
+
+local TRANSPARENT = vmath.vector4(1, 1, 1, 0)
+local WHITE = vmath.vector4(1)
+
+
+--function that shows info about things
+local function show_info(self, texts, index, sender, message)
+	gui.set_enabled(self.info_bar, true)
+
+	gamestate.set("PAUSE")
+	msg.post("/proxies#main", "set_time_step", {factor = 0, mode = 1})
+	
+	if texts[index] ~= nil then
+		gui.set_text(self.info_text, texts[index])
+	else
+		msg.post(sender, "info_shown", message)
+		gui.set_enabled(self.info_bar, false)
+		gui.set_enabled(self.another_bar, false)
+		msg.post("/proxies#main", "set_time_step", {factor = 1, mode = 1})
+		return
+	end
+	gui.set_position(self.another_bar, vmath.vector3(441, 243, 0))
+	gui.set_position(self.info_bar, INFO_BAR_POSITIONS.enter)
+
+	gui.animate(self.info_bar, gui.PROP_POSITION, INFO_BAR_POSITIONS.screen_up, go.EASING_OUTSINE, 0.25, 0, function()
+		if index == 1 then gui.set_enabled(self.another_bar, true) end
+		gui.animate(self.info_bar, gui.PROP_POSITION, INFO_BAR_POSITIONS.screen_down, go.EASING_LINEAR, 1.25, 0, function()
+			gui.animate(self.info_bar, gui.PROP_POSITION, INFO_BAR_POSITIONS.exit, go.EASING_INSINE, 0.25, 0, function()
+				show_info(self, texts, index + 1, sender, message)
+			end)
+		end)
+	end)
+end
+
+local function pause(self)
+	msg.post("/proxies#main", "set_time_step", {factor = 0, mode = 1})
+
+	gui.set_position(self.car, vmath.vector3(LEFT, -15, 0))
+	gui.set_position(self.title, vmath.vector3(0, UP, 0))
+	gui.set_position(self.bottom, vmath.vector3(0, DOWN, 0))
+	gui.set_color(self.pause, TRANSPARENT)
+
+	self.disable_input = true
+
+	gui.animate(self.pause, gui.PROP_COLOR, WHITE, go.EASING_LINEAR, 0.5, 0, function()
+		gui.animate(self.car, gui.PROP_POSITION, vmath.vector3(0, -15, 0), gui.EASING_OUTSINE, 0.75, 0, function()
+			gui.animate(self.title, gui.PROP_POSITION, vmath.vector3(CENTER), gui.EASING_OUTSINE, 0.5, 0)
+			gui.animate(self.bottom, gui.PROP_POSITION, vmath.vector3(CENTER), gui.EASING_OUTSINE, 0.5, 0, function()
+				self.disable_input = false
+			end)
+		end)
+	end)
+end
+
+local function resume(self, f)
+	gui.animate(self.title, gui.PROP_POSITION, vmath.vector3(0, UP, 0), gui.EASING_OUTSINE, 0.35, 0)
+	gui.animate(self.bottom, gui.PROP_POSITION, vmath.vector3(0, DOWN, 0), gui.EASING_OUTSINE, 0.35, 0, function()
+		gui.animate(self.car, gui.PROP_POSITION, vmath.vector3(-LEFT, -15, 0), gui.EASING_OUTSINE, 0.75, 0, function()
+			f()
+			msg.post("/proxies#main", "set_time_step", {factor = 1, mode = 1})
+			gui.animate(self.pause, gui.PROP_COLOR, TRANSPARENT, go.EASING_LINEAR, 0.5, 0, function()
+				gui.set_enabled(self.pause, false)
+			end)
+		end)
+	end)
+end
+
+
+--function that sets the color of text nodes
+local function set_node_color(self)
+	local color = areas.get_area(data.DATA.CURRENT_AREA).text
+	gui.set_color(self.info_text, color)
+	color = areas.get_area(data.DATA.CURRENT_AREA).theme
+	gui.set_color(self.info_bar, color)
+	gui.set_color(self.another_bar, color)
+end
+
+
+local function get_nodes(self)
+	self.title = gui.get_node("title")
+	self.car = gui.get_node("car")
+	self.bottom = gui.get_node("bottom")
+
+	self.menu = gui.get_node("menu/icon")
+	self.restart = gui.get_node("restart/icon")
+	self.resume = gui.get_node("resume/icon")
+
+	self.music = gui.get_node("music/icon")
+	self.pause = gui.get_node("pause")
+
+	-- the reference to the info bar
+	self.info_bar = gui.get_node("info_bar")
+	-- the reference to the info bar text
+	self.info_text = gui.get_node("info_text")
+	-- the reference to our another bar
+	self.another_bar = gui.get_node("bar")
+
+	gui.set_enabled(self.pause, false)
+	gui.set_enabled(gui.get_node("bar"), false)
+	gui.set_enabled(self.info_bar, false)
+
+	set_node_color(self)
+end
+
+local function register_buttons(self)
+	button.register(self.music, function()
+		data.DATA.SOUND = not data.DATA.SOUND
+		local state = data.DATA.SOUND
+		gui.play_flipbook(self.music, hash(state and "sound-on" or "sound-off"))
+	end)
+
+	button.register(self.menu, function()
+		resume(self, function()
+			msg.post("main:/game#game", "menu")
+		end)
+	end)
+
+	button.register(self.resume, function()
+		resume(self, function()
+			timer.delay(0.5, false, function()
+				msg.post("main:/game#game", "resume")
+			end)
+		end)
+	end)
+
+	button.register(self.restart, function()
+		resume(self, function()
+			msg.post("main:/game#game", "restart")
+		end)
+	end)
+end
+
+local function unregister_buttons(self)
+	button.unregister(self.menu)
+	button.unregister(self.restart)
+	button.unregister(self.resume)
+	button.unregister(self.music)
+end
+
+
+
+local function set_anim(self)
+	local index = data.DATA.CURRENT_CAR
+	local name = cars.get_car(index).name
+	local anim = hash(name)
+
+	gui.play_flipbook(self.car, anim)
+end
+
+
+function init(self)
+	get_nodes(self)
+	register_buttons(self)
+	set_anim(self)
+
+	gui.set_render_order(14)
+	button.acquire()
+end
+
+function final(self)
+	button.release()
+	unregister_buttons(self)
+end
+
+function update(self, dt)
+	-- Add update code here
+	-- Remove this function if not needed
+end
+
+function on_message(self, message_id, message, sender)
+	set_anim(self)
+	if message_id == PAUSE then
+		if message.pause then
+			gui.set_enabled(self.pause, true)
+			pause(self)
+		else
+			resume(self)
+		end
+	elseif message_id == SHOW_INFO then
+		show_info(self, message.texts, 1, sender, {shown_for = message.shown_for, type = message.type})
+	elseif message_id == SET_COLOR then
+		set_node_color(self)
+	end
+end
+
+function on_input(self, action_id, action)
+	button.on_input(action_id, action)
+end
+
+function on_reload(self)
+	-- Add input-handling code here
+	-- Remove this function if not needed
+end

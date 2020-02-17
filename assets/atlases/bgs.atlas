@@ -1,0 +1,15 @@
+images {
+  image: "/assets/images/bgs/Season_collection (2).png"
+}
+images {
+  image: "/assets/images/bgs/autum.png"
+}
+images {
+  image: "/assets/images/bgs/winter.png"
+}
+images {
+  image: "/assets/images/bgs/rains.png"
+}
+margin: 0
+extrude_borders: 2
+inner_padding: 0

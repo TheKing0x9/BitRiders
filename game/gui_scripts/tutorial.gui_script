@@ -1,0 +1,182 @@
+local data = require "game.modules.data"
+local cars = require "game.modules.cars"
+
+local SHOW = hash("show")
+
+local CENTER = 0
+local CAR_POS = 
+{
+	enter = vmath.vector3(-320, -40, 0),
+	exit = vmath.vector3(-320-540, -40, 0), 
+	right = vmath.vector3(620, -40, 0)
+}
+
+local TEXT_POS = {
+	enter = vmath.vector3(-328, 198, 0),
+	exit = vmath.vector3(-328-540, 198, 0)
+}
+
+local HAND_POSITIONS = {
+	move = {
+		up = vmath.vector3(-232, 56, 0),
+		down = vmath.vector3(-232, -144, 0)
+	},
+
+	pause = {
+		left = vmath.vector3(-170, -38, 0),
+		right = vmath.vector3(300, -38, 0),
+	}
+}
+
+local TEXTS = {
+	"Welcome to the training Rider",
+	"The rules are simple",
+	"Tap to move",
+	"Avoid other cars",
+	"And roadblocks",
+	"Collect pickups to power you up",
+	"Swipe right to pause",
+	"Ride towards infinity",
+	"Good luck rider!!",
+}
+
+local function set_text(self, index)
+	gui.set_text(self.text, TEXTS[index])
+	index = index + 1
+	return index
+end
+
+local function move_in(self, load)
+	gui.set_position(self.text_box, TEXT_POS.exit)
+	gui.set_position(self.car, CAR_POS.exit)
+
+	local index = 1
+
+	gui.animate(self.text_box, gui.PROP_POSITION, TEXT_POS.enter, gui.EASING_OUTSINE, 0.75)
+	gui.animate(self.car, gui.PROP_POSITION, CAR_POS.enter, gui.EASING_OUTSINE, 0.75, 0, function()
+
+		index = set_text(self, index)
+		
+		timer.delay(2, false, function()
+
+			index = set_text(self, index)
+			
+			timer.delay(2, false, function()
+				
+				index = set_text(self, index)
+
+				gui.set_enabled(self.move, true)
+				gui.set_position(self.hand_move, HAND_POSITIONS.move.down)
+						
+				gui.animate(self.hand_move, gui.PROP_POSITION, HAND_POSITIONS.move.up, gui.EASING_LINEAR, 1.5, 0, function()
+					gui.animate(self.hand_move, gui.PROP_POSITION, HAND_POSITIONS.move.up, gui.EASING_LINEAR, 1.5, 0, function()
+
+						gui.set_enabled(self.move, false)
+
+						index = set_text(self, index)
+
+						gui.set_enabled(self.enemy, true)
+
+						local enemy1 = gui.get_node("enemy1")
+						gui.set_position(enemy1, vmath.vector3(550, -124, 0))
+						gui.animate(enemy1, gui.PROP_POSITION, vmath.vector3(-550, -124, 0), gui.EASING_LINEAR, 2, 0, function()
+							index = set_text(self, index)
+
+							local enemy2 = gui.get_node("enemy2")
+							gui.set_position(enemy2, vmath.vector3(550, 20, 0))
+							gui.animate(enemy2, gui.PROP_POSITION, vmath.vector3(-550, 20, 0), gui.EASING_LINEAR, 2, 0, function()
+								index = set_text(self, index)
+
+								gui.set_enabled(self.enemy, false)
+								gui.set_enabled(self.pickup, true)
+
+								local from = vmath.vector3(704, -37, 0)
+								local to = gui.get_position(self.car)
+								gui.animate(self.pickup, gui.PROP_POSITION, to, gui.EASING_LINEAR, 2, 0, function()
+									gui.set_enabled(self.pickup, false)
+
+									index = set_text(self, index)
+
+									gui.set_enabled(self.hand_pause, true)
+									gui.set_position(self.hand_pause, HAND_POSITIONS.pause.left)
+
+									gui.animate(self.hand_pause, gui.PROP_POSITION, HAND_POSITIONS.pause.right, gui.EASING_LINEAR, 2, 0, function()
+										gui.set_enabled(self.hand_pause, false)
+										index = set_text(self, index)
+
+										timer.delay(2, false, function()
+											index = set_text(self, index)
+											timer.delay(2, false, function()
+
+												gui.animate(self.car, gui.PROP_POSITION, CAR_POS.right, go.EASING_INSINE, 2, 0, function()
+
+													if load then
+														msg.post("controller:/controller#controller", "load_scene", {scene = "main"})
+													else
+														msg.post("#", "disable")
+														msg.post("#menu", "enable")
+													end
+												end)
+											end)
+										end)	
+									end)
+								end)	
+							end)
+						end)
+						
+					end, gui.PLAYBACK_ONCE_PINGPONG)
+				end, gui.PLAYBACK_ONCE_PINGPONG)
+			end)
+		end)
+	end)
+end
+
+local function set_anim(self)
+	local index = data.DATA.CURRENT_CAR
+	local name = cars.get_car(index).name
+	local anim = hash(name)
+
+	gui.play_flipbook(self.car, anim)
+end
+
+
+function init(self)
+	self.text_box = gui.get_node("text_box")
+	self.text = gui.get_node("text")
+	self.car = gui.get_node("car")
+	self.hand_pause = gui.get_node("hand_pause")
+	self.enemy = gui.get_node("enemy")
+	self.move = gui.get_node("move")
+	self.hand_move = gui.get_node("hand")
+	self.pickup = gui.get_node("pickup")
+
+	gui.set_enabled(self.move, false)
+	gui.set_enabled(self.enemy, false)
+	gui.set_enabled(self.pickup, false)
+	gui.set_enabled(self.hand_pause, false)
+
+	set_anim(self)
+end
+
+function final(self)
+end
+
+function update(self, dt)
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == SHOW then
+		set_anim(self)
+		move_in(self, message.load)
+	end
+end
+
+function on_input(self, action_id, action)
+	-- Add input-handling code here
+	-- Remove this function if not needed
+end
+
+function on_reload(self)
+	-- Add input-handling code here
+	-- Remove this function if not needed
+end

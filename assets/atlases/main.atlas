@@ -1,0 +1,243 @@
+images {
+  image: "/assets/images/cars/cochesOGArtc_01.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_02.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_03.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_04.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_05.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_06.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_07.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_08.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_09.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_10.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_11.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_12.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_13.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_14.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_15.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_16.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_17.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_18.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_19.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_20.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_21.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_22.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_23.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_24.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_25.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_26.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_27.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_28.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_29.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_30.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_31.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_32.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_34.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_35.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_36.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_37.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_38.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_39.png"
+}
+images {
+  image: "/assets/images/objects/aarrow.png"
+}
+images {
+  image: "/assets/images/objects/coin.png"
+}
+images {
+  image: "/assets/images/objects/computer.png"
+}
+images {
+  image: "/assets/images/objects/finish_line.png"
+}
+images {
+  image: "/assets/images/objects/go.png"
+}
+images {
+  image: "/assets/images/objects/lock.png"
+}
+images {
+  image: "/assets/images/objects/nitro.png"
+}
+images {
+  image: "/assets/images/objects/pause.png"
+}
+images {
+  image: "/assets/images/objects/prize.png"
+}
+images {
+  image: "/assets/images/objects/score.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_40.png"
+}
+images {
+  image: "/assets/images/cars/police.png"
+}
+images {
+  image: "/assets/images/cars/cochesOGArtc_33.png"
+}
+images {
+  image: "/assets/images/bgs/cloud.png"
+}
+images {
+  image: "/assets/images/bgs/moon.png"
+}
+images {
+  image: "/assets/images/bgs/pole.png"
+}
+images {
+  image: "/assets/images/bgs/sun.png"
+}
+images {
+  image: "/assets/images/bgs/water-tank.png"
+}
+images {
+  image: "/assets/images/objects/button.png"
+}
+images {
+  image: "/assets/images/objects/signnboard.png"
+}
+images {
+  image: "/assets/images/objects/title.png"
+}
+images {
+  image: "/assets/images/others/sound-on.png"
+}
+images {
+  image: "/assets/images/others/sound-off.png"
+}
+images {
+  image: "/assets/images/others/credits.png"
+}
+images {
+  image: "/assets/images/others/icon_bg.png"
+}
+images {
+  image: "/assets/images/objects/coins.png"
+}
+images {
+  image: "/assets/images/others/arrow.png"
+}
+images {
+  image: "/assets/images/others/chain.png"
+}
+images {
+  image: "/assets/images/others/hand.png"
+}
+images {
+  image: "/assets/images/others/bar.png"
+}
+images {
+  image: "/assets/images/others/gift.png"
+}
+images {
+  image: "/assets/images/objects/double_coins.png"
+}
+images {
+  image: "/assets/images/objects/explode.png"
+}
+images {
+  image: "/assets/images/others/double_score.png"
+}
+images {
+  image: "/assets/images/others/destroy.png"
+}
+images {
+  image: "/assets/images/others/share.png"
+}
+images {
+  image: "/assets/images/others/cross.png"
+}
+images {
+  image: "/assets/images/others/save.png"
+}
+images {
+  image: "/assets/images/others/pop.png"
+}
+images {
+  image: "/assets/images/others/flake.png"
+}
+images {
+  image: "/assets/images/others/leaf.png"
+}
+images {
+  image: "/assets/images/others/qmark.png"
+}
+margin: 1
+extrude_borders: 0
+inner_padding: 0

@@ -1,0 +1,12 @@
+INFO:DLIB: Writing log to: ./log.txt
+INFO:ENGINE: Loading data from: build/default
+INFO:ENGINE: Initialised sound device 'default'
+
+DEBUG:SCRIPT: DefSave: The file 'save' was successfully loaded
+DEBUG:SCRIPT: 1
+INFO:DLIB: SSDP: Started on address 10.81.90.115
+INFO:DLIB: SSDP: Started on address 192.168.56.1
+DEBUG:SCRIPT: 3
+INFO:SOUND: Waiting for OpenAL device to complete
+INFO:DLIB: SSDP: Done on address 10.81.90.115
+INFO:DLIB: SSDP: Done on address 192.168.56.1

@@ -1,0 +1,107 @@
+local sounds = require "game.modules.sounds"
+local charge = require "game.modules.charges"
+
+local HAZARD = hash("hazard")
+local PICKUP = hash("pickup")
+local NEUTRAL = hash("neutral")
+local CHARGE = hash("charge")
+
+local UP = hash("up")
+local DOWN = hash("down")
+
+local PLAYER = hash("/player")
+
+local MID_POINT = -56
+
+go.property("type", hash("neutral"))
+go.property("sub_type", hash("Wrong Lane"))
+
+local EXPLODE = hash("explode")
+local GAME = hash("/game")
+
+local function set_anim(self, zone)
+	if self.type == HAZARD then
+		local number = math.random(1, zone + 5)
+		number = number < 10 and "0"..number or tostring(number)
+		return hash("cochesOGArtc_"..number)
+	elseif self.type == PICKUP then
+		return self.sub_type
+	else
+		return
+	end
+end
+
+local function set_zone_text(self, zone)
+	if self.type ~= NEUTRAL then
+		return
+	end
+	label.set_text("#zone", tostring(zone))
+	--msg.post("#collisionobject", "disable")
+end
+
+local function decide_dir(self)
+	local position = go.get_world_position()
+	if position.y < MID_POINT then
+		return UP
+	else
+		return DOWN
+	end
+end
+
+local function set_flip(self, dir)
+	if self.type ~= HAZARD then
+		return
+	end
+	
+	if dir == UP then
+		sprite.set_hflip("#sprite", false)
+	elseif dir == DOWN then
+		sprite.set_hflip("#sprite", true)
+	end
+end
+
+function init(self)
+	local zone = go.get(msg.url(nil, GAME, "game"), "zone")
+	local anim = set_anim(self, zone)
+	local dir = decide_dir(self)
+	set_flip(self, dir)
+	if anim then
+		sprite.play_flipbook("#sprite", anim)
+	end
+	set_zone_text(self, zone)
+	msg.post("/game#game", "register", {id = go.get_id()})
+
+	self.fine = charge.get_fines(self.sub_type)
+end
+
+function final(self)
+	msg.post("/game#game", "unregister", {id = go.get_id()})
+end
+
+function update(self, dt)
+	if self.type ~= CHARGE then return end
+
+	local position = go.get_position(PLAYER) 
+	local my_pos = go.get_position()
+	
+	if math.ceil(position.x/10) == math.ceil(my_pos.x/10) and not self.charged then
+		print("CHARGE")
+		local y = position.y
+		if y > MID_POINT then
+			print(self.sub_type, self.fine)
+			msg.post("/game#game", "charge", {amount = self.fine})
+			self.charged = true
+		end
+	end
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == EXPLODE then
+		if self.type == NEUTRAL then
+			return
+		end
+		sounds.explode()
+		go.delete()
+		factory.create("/factories#explosion", go.get_world_position())
+	end
+end

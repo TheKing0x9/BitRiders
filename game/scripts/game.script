@@ -1,0 +1,469 @@
+--all our dependencies
+local input = require "game.modules.input"
+local gamestate = require "game.modules.gamestate"
+local utils = require "game.modules.utils"
+local wind = require "game.modules.wind"
+local gesture = require "in.gesture"
+local data = require "game.modules.data"
+local sounds = require "game.modules.sounds"
+local charges = require "game.modules.charges"
+--local missions = require "game.modules.missions"
+--local manager = require "game.modules.manager"
+--so many!!This is a dependant script :P
+
+-- min movement speed
+go.property("min_speed", vmath.vector3(100, 10, 0))
+-- max movement speed
+go.property("max_speed", vmath.vector3())
+-- acceleration, on both x and y axes
+go.property("acceleration", vmath.vector3())
+-- initial spawn duration
+go.property("init_distance", 150)
+-- final spawn duration
+go.property("min_duration", 100)
+-- game difficulty, manages the speed of decrement of spawn distance
+go.property("difficulty", 0.03333)
+-- the current zone of the player
+go.property("zone", 35)
+-- do not touch
+go.property("cur_speed", vmath.vector3())
+--distance to spawn charge
+go.property("charge_distance", 5000)
+
+--input actions
+local UP = hash("key_up")
+local DOWN = hash("key_down")
+local TOUCH = hash("touch")
+
+--messages
+local START = hash("start")
+local RESTART = hash("restart")
+local REVIVE = hash("revive")
+local REGISTER = hash("register")
+local UNREGISTER = hash("unregister")
+local OVER = hash("over")
+local ADD_SCORE = hash("add_score")
+local ADD_COINS = hash("add_coins")
+local ASK_BLINK = hash("ask_blink")
+local REVIVE = hash("revive")
+local ACTIVATE_PICKUP = hash("activate_pickup")
+local HIT = hash("hit")
+local MENU = hash("menu")
+local RESUME = hash("resume")
+local HIDE_ALL = hash("hide_all")
+local SHOW_ALL = hash("show_all")
+local UPDATE_DATA = hash("update_data")
+local INFO_SHOWN = hash("info_shown")
+local CHARGE = hash("charge")
+
+--constants
+local NORTH = vmath.vector3(0, 1, 0)
+local EAST = vmath.vector3(1, 0, 0)
+local PLAYER_START = vmath.vector3(-450, -50, 0)
+local PLAYER_END = vmath.vector3(-150, -50, 0)
+local ROAD_SPAWN = vmath.vector3(735, -135, -0.5)
+
+local MID_POINT = -56
+local MAX_ZONE = 35
+
+local PLAYER = hash("/player")
+local CAMERA = hash("/camera")
+
+local HAZARD = hash("hazard")
+local PICKUP = hash("pickup")
+
+--pickups
+local COIN = hash("coins")
+local NITRO = hash("nitro")
+local DESTROY = hash("destroy")
+local DOUBLE_COINS = hash("double_coins")
+local DOUBLE_SCORE = hash("double_score")
+local EXPLODE = hash("explode")
+local SLOW = hash("slow")
+
+
+--some tables
+local OBJECTS = {
+	PICKUP, HAZARD, HAZARD, HAZARD, 
+	HAZARD, HAZARD, HAZARD, HAZARD, 
+	HAZARD, HAZARD, HAZARD, HAZARD, 
+}
+local PICKUPS = {
+	COIN, NITRO, DESTROY, DOUBLE_COINS, DOUBLE_SCORE, EXPLODE, 
+	COIN, COIN, COIN, COIN, COIN, COIN, COIN, COIN, COIN, COIN, COIN, 
+	COIN, COIN, COIN, COIN, COIN, 
+}
+local ROADS = {"road", "road1"}
+local BG = {"go", "go1"}
+local POSITIONS = {
+	up = {
+		min = -10,
+		max = 55
+	}, 
+	down = {
+		min = 60,
+		max = 115
+	}
+}
+
+--function that resets values to default values
+local function reset_defaults(self)
+	self.coins = 0
+	self.score = 0
+	self.coins_multiplier = 1
+	self.invincible = false
+	self.nitro = false
+	self.zone = 1
+	self.charges = 0
+
+	self.total_distance = 0
+	
+	self.speed = utils.copy_vec3(self.min_speed)
+	self.cur_speed = utils.copy_vec3(self.min_speed)
+	self.distance = 0
+	self.spawned = {}
+end
+
+--function that deletes all the spawned objects
+local function delete_all(self)
+	for k, v in pairs(self.spawned) do
+		go.delete(v)
+	end
+end
+
+--explodes all enemies in scene
+local function explode_all(self)
+	for k, v in pairs(self.spawned) do
+		msg.post(v, "explode")
+	end
+end
+
+--function that handles start of game
+local function start_game(self)
+	msg.post("/gui#game_over", "disable")
+	msg.post("/gui#share", "disable")
+	msg.post("/gui#hud", "enable")
+	msg.post("/gui#hud", "update_zone", {zone = self.zone})
+	go.set_position(PLAYER_START, PLAYER)
+	go.set_position(vmath.vector3(0), CAMERA)
+	go.animate(PLAYER, "position", go.PLAYBACK_ONCE_FORWARD, PLAYER_END, go.EASING_OUTSINE, 1, 0, function()
+		msg.post("controller:/controller#ingame", "show_info", {texts = {
+			"GO!!"
+		}, shown_for = START})
+	end)
+end
+
+--function that handles restart of game
+local function restart_game(self)
+	msg.post("/gui#hud", "reset")
+	delete_all(self)
+	reset_defaults(self)
+	start_game(self)
+end
+
+--function that handles reviving of player
+local function revive(self)
+	--delete_all(self)
+	explode_all(self)
+	start_game(self)
+end
+
+--function that handles game over
+local function game_over(self)
+	if gamestate.get() == "OVER" then
+		return
+	end
+
+	gamestate.set("OVER")
+
+	msg.post(CAMERA, "shake", {intensity = 0.005, duration = 2})
+	timer.delay(2, false, function()
+		msg.post("/gui#hud", "hide")
+		msg.post("/gui#game_over", "enable")
+	end)
+end
+
+--function that manages pickups
+local function handle_pickup(self, type)
+	sounds.coin()
+	if type == COIN then
+		self.coins = self.coins + 100 * self.coins_multiplier
+		msg.post("/gui#hud", "add_coins", {coins = self.coins})
+
+		manager.modify_stat("coins", self.coins)
+	elseif type == NITRO then
+		self.nitro = true
+		self.speed.x = 1000
+		timer.delay(5, false, function()
+			self.speed.x = self.max_speed.x
+			self.nitro = false
+		end)
+	elseif type == DESTROY then
+		self.invincible = true
+		go.animate(PLAYER, "scale", go.PLAYBACK_ONCE_FORWARD, vmath.vector3(2), go.EASING_LINEAR, 1, 0, function()
+			timer.delay(5, false, function()
+				go.animate(PLAYER, "scale", go.PLAYBACK_ONCE_FORWARD, vmath.vector3(1.5), go.EASING_LINEAR, 1, 0, function()
+					self.invincible = false
+				end)
+			end)
+		end)
+	elseif type == DOUBLE_COINS then
+		self.coins_multiplier = 2
+		timer.delay(10, false, function()
+			self.coins_multiplier = 1
+		end)
+	elseif type == DOUBLE_SCORE then
+		msg.post("/gui#hud", "double_score", { begin = true })
+		timer.delay(5, false, function()
+			msg.post("/gui#hud", "double_score", { begin = false })
+		end)
+	elseif type == EXPLODE then
+		explode_all(self)
+	elseif type == SLOW then
+		--set_time_step
+	end
+end
+
+--handles charges
+local function charge(self, amount)
+	self.coins = math.max(self.coins - amount, 0)
+	self.charges = self.charges + 1
+	msg.post("/gui#hud", "add_coins", {coins = self.coins})
+end
+
+--function that returns pickups as string
+local function get_pickup_text(type)
+	if type == EXPLODE then
+		return "EXPLODE"
+	elseif type == DESTROY then
+		return "INVINCIBLE"
+	elseif type == DOUBLE_COINS then
+		return "2 X COINS"
+	elseif type == DOUBLE_SCORE then
+		return "2 X SCORE"
+	elseif type == NITRO then
+		return "NITRO"
+	end
+end
+
+--function to manage spawning of objects
+local function spawn_objects(self, dt)
+	self.distance = self.distance + self.cur_speed.x * dt
+	if self.distance > self.init_distance then
+		self.distance = 0
+
+		local position = vmath.vector3(540 + math.random(-50, 50), -math.random(POSITIONS.up.min, POSITIONS.up.max), 0)
+		local type = OBJECTS[math.random(1, #OBJECTS)]
+		local sub_type = PICKUPS[math.random(1, #PICKUPS)]
+		local i = factory.create("/factories#objects", position, nil, {type = type, sub_type = sub_type}, vmath.vector3(1.5))
+
+		local position = vmath.vector3(540+ math.random(-50, 50), -math.random(POSITIONS.down.min, POSITIONS.down.max), 0)
+		local type = OBJECTS[math.random(1, #OBJECTS)]
+		local sub_type = PICKUPS[math.random(1, #PICKUPS)]
+		local i = factory.create("/factories#objects", position, nil, {type = type, sub_type = sub_type}, vmath.vector3(1.5))
+	end
+end
+
+--function that spawns charge
+local function spawn_charge(self)
+	local position = vmath.vector3(540, 20, 0)
+	local type = CHARGE
+	local sub_type = hash(charges.CHARGES[math.random(1, #charges.CHARGES)].name)
+	local i = factory.create("/factories#objects", position, nil, {type = type, sub_type = sub_type}, vmath.vector3(1.5))
+end
+
+--function that manages things when a zone is complete
+local function zone_completed(self)
+	self.zone = math.min(self.zone + 1, MAX_ZONE)
+	factory.create("/factories#board", vmath.vector3(540, -POSITIONS.down.max, 0))
+	msg.post("/gui#hud", "update_zone", {zone = self.zone})
+end
+
+--function that handles zones
+local function handle_zone(self)
+	local term = (self.zone * (self.zone + 1) / 2) * 1000
+	local prev_term = 0 
+	if self.total_distance > ((term - prev_term) * 2) then
+		zone_completed(self)
+	end
+end
+
+--function to handle input
+local function handle_input(self)
+	if input.is_pressed(UP) then				--if up key is pressed
+		self.cur_speed.y = self.speed.y
+	elseif input.is_pressed(DOWN) then 			--if down key is pressed
+		self.cur_speed.y = -self.speed.y
+	elseif not input.is_pressed(TOUCH) then		--otherwise
+		self.cur_speed.y = 0
+	end
+end
+
+--function to update positions
+local function update_positions(self, dt, id, speed)
+	local position = go.get_world_position(id)
+	position = position + speed * dt
+	go.set_position(position, id)
+	return position
+end
+
+--the init function
+function init(self)
+	print(data.DATA.CURRENT_AREA)
+	reset_defaults(self)
+	start_game(self)
+	--missions.activate_mission(1)
+	input.acquire()								--acquire input focus
+end
+
+--the final function
+function final(self)
+	input.release()								--release input focus
+end
+
+--the update function
+function update(self, dt)
+	for k, v in pairs(ROADS) do
+		local position = update_positions(self, dt, v, -self.cur_speed.x * EAST)
+		local width = wind.get_width()
+		if position.x < -735 then
+			position.x = 725
+			go.set_position(position, v)
+		end
+	end
+
+	for k, v in pairs(BG) do
+		local position = update_positions(self, dt, v, -self.cur_speed.x * EAST)
+		local width = wind.get_width()
+		if position.x < -(285*3) then
+			position.x = 285*3-15
+			go.set_position(position, v)
+		end
+	end
+	
+	if gamestate.get() ~= "PLAY" then
+		return
+	end
+
+	handle_input(self)
+	local position = update_positions(self, dt, PLAYER, self.cur_speed.y * NORTH)
+	position.y = utils.clamp(position.y, -115, 0)
+	go.set_position(position, PLAYER)
+
+	spawn_objects(self, dt)
+	handle_zone(self)
+
+	for k, v in pairs(self.spawned) do
+		local position = go.get_position(v)
+		local speed = self.cur_speed.x + (position.y > MID_POINT and -25 or 25)
+		local position = update_positions(self, dt, v, -speed * EAST)
+		local width = wind.get_width()
+		if position.x < (-width) then
+			go.delete(v)
+			table.remove(self.spawned, k)
+		end
+	end
+
+
+	self.speed.y = math.min(self.speed.y + self.acceleration.y * dt, self.max_speed.y)
+	if not self.nitro then
+		self.speed.x = math.min(self.speed.x + self.acceleration.x * dt, self.max_speed.x)
+	end
+	
+	self.cur_speed.x = self.speed.x
+	self.total_distance = self.total_distance + self.speed.x * dt
+end
+
+--function that handles messages
+function on_message(self, message_id, message, sender)
+	if message_id == REGISTER then
+		table.insert(self.spawned, message.id)
+	elseif message_id == START then
+		start_game(self)
+	elseif (message_id == OVER) or (message_id == HIT) then
+		if not (self.invincible or self.nitro) then
+			game_over(self)
+		else
+			msg.post(message.hit_by, "explode")
+		end
+	elseif message_id == RESTART then
+		restart_game(self)
+	elseif message_id == REVIVE then
+		revive(self)
+	elseif message_id == ACTIVATE_PICKUP then
+		if message.type ~= COIN then
+			msg.post("controller:/controller#ingame", "show_info", {texts = {get_pickup_text(message.type)}, shown_for = PICKUP, type = message.type})
+		else
+			handle_pickup(self, message.type)
+		end
+	elseif message_id == INFO_SHOWN then
+		gamestate.set("PLAY")
+		local shown_for = message.shown_for
+		if shown_for == PICKUP then
+			handle_pickup(self, message.type)
+		elseif shown_for == START then
+			gamestate.set("PLAY")
+		end
+	elseif message_id == UPDATE_DATA then
+		table.insert(data.DATA.SCORES, math.floor(message.score))
+		table.sort(data.DATA.SCORES)
+		data.DATA.COINS = data.DATA.COINS + message.coins
+		data.DATA.CHARGES = data.DATA.CHARGES + self.charges
+		data.DATA.ZONE = math.max(data.DATA.ZONE, self.zone)
+	elseif message_id == SHOW_ALL then
+		for k, v in pairs(self.spawned) do
+			msg.post(v, "enable")
+		end
+		msg.post(PLAYER, "enable")
+	elseif message_id == HIDE_ALL then
+		for k, v in pairs(self.spawned) do
+			msg.post(v, "disable")
+		end
+		msg.post(PLAYER, "disable")
+	elseif message_id == RESUME then
+		gamestate.set("PLAY")
+	elseif message_id == MENU then
+		msg.post("controller:/controller#controller", "load_scene", {scene = "menu"})
+	elseif message_id == CHARGE then
+		charge(self, message.amount)
+	elseif message_id == ADD_SCORE then
+		self.score = self.score + message.score
+		local position = get_screen_position(self, message.position)
+		msg.post("/gui#hud", "add_score", {position = position, score = message.score})
+	elseif message_id == UNREGISTER then
+		for k, v in pairs(self.spawned) do
+			if v == message.id then
+				table.remove(self.spawned, k)
+				break
+			end
+		end
+	end
+end
+
+--the (official) DefInput function
+function on_input(self, action_id, action)
+	input.on_input(action_id, action)
+
+	if gamestate.get() ~= "PLAY" then
+		return
+	end
+
+	if action_id == TOUCH then
+		local position = go.get_position(PLAYER)
+		if (action.y-270) > position.y then
+			self.cur_speed.y = self.speed.y
+		elseif (action.y-270) < position.y then
+			self.cur_speed.y = -self.speed.y
+		end
+	end
+
+	local g = gesture.on_input(self, action_id, action)
+	if g then
+		if g.swipe_right then 
+			if gamestate.get() ~= "PAUSE" then
+				msg.post("controller:/controller#ingame", "pause", { pause = true })
+				gamestate.set("PAUSE")
+			end
+		end
+	end
+end

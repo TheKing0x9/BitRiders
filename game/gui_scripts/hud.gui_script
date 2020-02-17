@@ -1,0 +1,144 @@
+local gamestate = require "game.modules.gamestate"
+local data = require "game.modules.data"
+local areas = require "game.modules.areas"
+
+-- messages
+local ENABLE = hash("enable")
+local HIDE = hash("hide")
+local RESET = hash("reset")
+local ADD_COINS = hash("add_coins")
+local DOUBLE_SCORE = hash("double_score")
+local UPDATE_ZONE = hash("update_zone")
+
+-- how fast the coins counts up per second
+local coins_inc_speed = 100
+-- how fast the score counts up per second
+local score_inc_speed = 25
+
+-- function that updates zone text
+local function update_zone(self)
+	-- set the text on the zone node to the zone number
+	gui.set_text(self.zone_node, string.format("Zone %d", self.zone))
+end
+
+--function that sets the color of text nodes
+local function set_node_color(self)
+	local color = areas.get_area(data.DATA.CURRENT_AREA).text
+	gui.set_color(self.score_node, color)
+	gui.set_color(self.coins_node, color)
+	gui.set_color(self.zone_node, color)
+end
+
+-- the init function
+function init(self)
+	-- the target coins is the current coins in the game
+	self.target_coins = 0
+	-- the current coins being counted up towards the target coins
+	self.current_coins = 0
+	-- the coins as displayed in the hud
+	self.displayed_coins = 0
+	-- the current score
+	self.score = 0
+	-- the current score multiplier
+	self.score_multiplier = 1
+	-- keep a reference to the node displaying the coins for later use below
+	self.coins_node = gui.get_node("coins")
+	-- keep a reference to the node containing all the other nodes
+	self.top_bar = gui.get_node("top_bar")
+	-- the reference to the score node
+	self.score_node = gui.get_node("score")
+	-- the refernce to zone number
+	self.zone = 1
+	-- the reference to the zone node
+	self.zone_node = gui.get_node("zone")
+	-- update the zone text
+	update_zone(self)
+	-- post the enable message to self
+	msg.post("#", "enable")
+	-- set the theme color of nodes
+	set_node_color(self)
+end
+
+function final(self)
+	-- Add finalization code here
+	-- Remove this function if not needed
+end
+
+function update(self, dt)
+
+	--if the gamestate is not PLAY then
+	if gamestate.get() ~= "PLAY" then
+		return
+	end
+	
+	-- check if the coins needs to be updated
+	if self.current_coins ~= self.target_coins then
+		-- the difference between current and target coins
+		local diff = self.current_coins - self.target_coins
+		-- increment the coins for this timestep to grow towards the target coins
+		local speed = (diff) < 0 and coins_inc_speed or -coins_inc_speed
+		self.current_coins = self.current_coins + speed * dt
+		-- clamp the coins so it doesn't grow past the target coins
+		self.current_coins = diff < 0 and math.min(self.current_coins, self.target_coins) or math.max(self.current_coins, self.target_coins)
+		-- floor the coins so it can be displayed without decimals
+		local floored_coins = math.floor(self.current_coins)
+		-- check if the displayed coins should be updated
+		if self.displayed_coins ~= floored_coins then
+			-- update displayed coins
+			self.displayed_coins = floored_coins
+			-- update the text of the coins node
+			gui.set_text(self.coins_node, self.displayed_coins)
+			-- set the scale of the coins node to be slightly bigger than normal
+			local s = 1.2
+			gui.set_scale(self.coins_node, vmath.vector3(s, s, s))
+			-- then animate the scale back to the original value
+			s = 1
+			gui.animate(self.coins_node, gui.PROP_SCALE, vmath.vector3(s, s, s), gui.EASING_OUT, 0.2)
+		end
+	end
+
+	-- increment score every dt
+	self.score = self.score + score_inc_speed * self.score_multiplier * dt
+	-- floor the score so that we don't display decimal numbers
+	local floor = math.floor(self.score)
+	-- set the score on its node
+	gui.set_text(self.score_node, string.format("%d X "..self.score_multiplier.." Pt", floor))
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == ENABLE then
+		gui.set_position(self.top_bar, vmath.vector3(480, 720, 0))
+		gui.animate(self.top_bar, gui.PROP_POSITION, vmath.vector3(480, 540, 0), gui.EASING_OUTCIRC, 0.45)
+	elseif message_id == ADD_COINS then
+		self.target_coins = message.coins
+	elseif message_id == HIDE then
+		self.current_coins = self.target_coins
+		gui.animate(self.top_bar, gui.PROP_POSITION, vmath.vector3(480, 720, 0), gui.EASING_INSINE, 0.45)
+		msg.post("/game#game", "set_things", { score = self.score, coins = self.target_coins })
+		msg.post("/gui#game_over", "set_things", { score = self.score, coins = self.target_coins })
+	elseif message_id == DOUBLE_SCORE then
+		self.score_multiplier = message.begin and 2 or 1
+	elseif message_id == UPDATE_ZONE then
+		self.zone = message.zone
+		score_inc_speed = 100 + 50 * (self.zone - 1)
+		update_zone(self)
+	elseif message_id == RESET then
+		self.current_coins = 0
+		self.target_coins = 0
+		self.displayed_coins = 0
+		self.score  = 0
+		
+		gui.set_text(self.coins_node, self.displayed_coins)
+		gui.set_text(self.score_node, string.format("%d Pt", self.score))
+	end
+end
+
+function on_input(self, action_id, action)
+	-- Add input-handling code here
+	-- Remove this function if not needed
+end
+
+function on_reload(self)
+	-- Add input-handling code here
+	-- Remove this function if not needed
+end

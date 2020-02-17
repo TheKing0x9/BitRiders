@@ -1,0 +1,228 @@
+local gamestate = require "game.modules.gamestate"
+local data = require "game.modules.data"
+local button = require "in.button"
+local chrono = require "chrono.chrono"
+local cars = require "game.modules.cars"
+local areas = require "game.modules.areas"
+
+--some constants
+local TOUCH = hash("touch")
+local ENABLE = hash("enable")
+local SOUND = hash("sound")
+
+local UP = 270
+local DOWN = -UP
+local CENTER = 0
+local LEFT = -540
+
+--some important ids
+local GAME = hash("/game")
+
+local function set_bg(self)
+	local anim = areas.get_area(data.DATA.CURRENT_AREA).anim
+	gui.play_flipbook(self.bg, anim)
+end
+
+local function move_in(self)
+	gui.set_position(self.car, vmath.vector3(LEFT, -15, 0))
+	gui.set_position(self.title, vmath.vector3(0, UP, 0))
+	gui.set_position(self.bottom, vmath.vector3(0, DOWN, 0))
+	gui.set_scale(self.bg, vmath.vector3(0.001))
+
+	set_bg(self)
+
+	self.disable_input = true
+
+	gui.animate(self.bg, gui.PROP_SCALE, vmath.vector3(0.5), gui.EASING_OUTBACK, 0.75, 0, function()
+		gui.animate(self.car, gui.PROP_POSITION, vmath.vector3(0, -15, 0), gui.EASING_OUTSINE, 0.75, 0, function()
+			gui.animate(self.title, gui.PROP_POSITION, vmath.vector3(CENTER), gui.EASING_OUTSINE, 0.5, 0)
+			gui.animate(self.bottom, gui.PROP_POSITION, vmath.vector3(CENTER), gui.EASING_OUTSINE, 0.5, 0, function()
+					self.disable_input = false
+			end)
+		end)
+	end)
+end
+
+local function move_out(self, f)
+	gui.animate(self.title, gui.PROP_POSITION, vmath.vector3(0, UP, 0), gui.EASING_OUTSINE, 0.35, 0)--, function()
+		gui.animate(self.bottom, gui.PROP_POSITION, vmath.vector3(0, DOWN, 0), gui.EASING_OUTSINE, 0.35, 0, function()
+			gui.animate(self.car, gui.PROP_POSITION, vmath.vector3(-LEFT, -15, 0), gui.EASING_OUTSINE, 0.75, 0, f)
+		end)
+	--end)
+end
+
+local function handle_daily_rewards(self)
+	gui.set_enabled(self.gift, false)
+	if not sys.get_connectivity() then
+		--set daily reward node disabled
+		print("connectivity")
+		gui.set_enabled(self.gift, false)
+		return
+	end
+	local time = chrono.get_time()
+	local day = 24 * 60 * 60--some number
+	if (data.DATA.LAST_TIME - time) > day then
+		gui.set_enabled(self.gift, true)
+	end
+end
+
+local function set_anim(self)
+	local index = data.DATA.CURRENT_CAR
+	local name = cars.get_car(index).name
+	local anim = hash(name)
+
+	gui.play_flipbook(self.car, anim)
+end
+
+function init(self)
+	self.play = gui.get_node("play/icon")
+	self.shop = gui.get_node("shop/icon")
+	self.music = gui.get_node("music/icon")
+	self.rate = gui.get_node("rate/icon")
+	self.area = gui.get_node("area/icon")
+	self.tutorial = gui.get_node("tutorial/icon")
+	self.credits = gui.get_node("credits/icon")
+
+	self.title = gui.get_node("title")
+	self.car = gui.get_node("car")
+	self.bottom = gui.get_node("bottom")
+	
+	self.menu = gui.get_node("menu")
+
+	self.gift = gui.get_node("gift_bg")
+	self.gift_icon = gui.get_node("gift/icon")
+
+	self.bg = gui.get_node("bg1")
+
+	self.disable_input = false
+
+	move_in(self)
+	msg.post(".", "acquire_input_focus")
+	gamestate.set("MENU")
+
+	msg.post("#shop", "disable")
+	msg.post("#tutorial", "disable")
+	msg.post("#area", "disable")
+
+	handle_daily_rewards(self)
+	set_anim(self)
+
+	button.register(self.rate, function()
+		--sys.open_url("www.play.google.com")
+	end)
+
+	button.register(self.credits, function()
+		self.disable_input = true
+		move_out(self, function()
+			msg.post("controller:/controller#controller", "load_scene", {scene = "credits"})
+			self.disable_input = false
+		end)
+	end)
+
+	button.register(self.music, function()
+		data.DATA.SOUND = not data.DATA.SOUND
+		local state = data.DATA.SOUND
+		gui.play_flipbook(self.music, hash(state and "sound-on" or "sound-off"))
+	end)
+
+	button.register(self.tutorial, function()
+		self.disable_input = true
+		move_out(self, function()
+			msg.post("#tutorial", "enable")
+			msg.post("#tutorial", "show")
+			msg.post("#", "disable")
+			self.disable_input = false
+		end)
+	end)
+
+	
+	button.register(self.gift_icon, function()
+		if not gui.is_enabled(self.gift) then
+			return
+		end
+		data.DATA.DAYS = data.DATA.DAYS + 1
+		local coins = data.DATA.DAYS * 100
+		data.DATA.COINS = data.DATA.COINS + coins
+		local position = gui.get_screen_position(self.gift)
+		local text = gui.new_text_node(vmath.vector3(position.x, position.y + 20, position.z),  " + "..coins.." COINS")
+		gui.set_font(text, "main")
+		gui.set_scale(text, vmath.vector3(0.45))
+		gui.set_pivot(text, gui.PIVOT_CENTER)
+		gui.set_color(text, vmath.vector4(0, 0, 0, 1))
+		self.disable_input = true
+		gui.animate(text, gui.PROP_POSITION, vmath.vector3(480, 270-170, 0), go.EASING_OUTSINE, 0.75, 0, function()
+			gui.delete_node(text)
+			gui.set_enabled(self.gift, false)
+			data.DATA.LAST_TIME = chrono.get_time()
+			self.disable_input = false
+		end)
+	end)
+
+	local state = data.DATA.SOUND
+	gui.play_flipbook(self.music, hash(state and "sound-on" or "sound-off"))
+
+	
+end
+
+function final(self)
+	button.unregister(self.rate)
+	button.unregister(self.music)
+	button.unregister(self.tutorial)
+	button.unregister(self.gift_icon)
+	msg.post(".", "release_input_focus")
+end
+
+function update(self, dt)
+	-- Add update code here
+	-- Remove this function if not needed
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == ENABLE then
+		gamestate.set("MENU")
+		move_in(self)
+		set_anim(self)
+	end
+end
+
+function on_input(self, action_id, action)
+	if gui.is_enabled(self.menu) == false or self.disable_input then
+		return
+	end
+
+	button.on_input(action_id, action)
+
+	if action_id == TOUCH and action.pressed then
+		if gui.pick_node(self.play, action.x, action.y) then
+			self.disable_input = true
+			move_out(self, function()
+				msg.post("#", "disable")
+				if data.DATA.FIRST_TIME then
+					data.DATA.FIRST_TIME = false
+					--msg.post("#tutorial", "enable")
+					--msg.post("#tutorial", "show", {load = true})
+				else
+					--msg.post("controller:/controller#controller", "load_scene", {scene = "main"})
+				end
+				msg.post("controller:/controller#controller", "load_scene", {scene = "main"})
+				self.disable_input = false
+			end)
+		elseif gui.pick_node(self.shop, action.x, action.y) then
+			--show shop
+			self.disable_input = true
+			move_out(self, function()
+				msg.post("/gui#shop", "enable")
+				msg.post("#", "disable")
+				self.disable_input = false
+			end)
+		elseif gui.pick_node(self.area, action.x, action.y) then
+			--show shop
+			self.disable_input = true
+			move_out(self, function()
+				msg.post("/gui#area", "enable")
+				msg.post("#", "disable")
+				self.disable_input = false
+			end)
+		end
+	end
+end

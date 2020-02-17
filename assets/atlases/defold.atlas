@@ -1,0 +1,6 @@
+images {
+  image: "/assets/images/mwdefold-logo-outline-dark@2x.png"
+}
+margin: 0
+extrude_borders: 2
+inner_padding: 0

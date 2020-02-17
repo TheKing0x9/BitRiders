@@ -1,0 +1,36 @@
+local data = require "game.modules.data"
+
+local SOUND = hash("sound")
+
+local musics = {
+	{
+		name = "music1",
+	},
+	{
+		name = "music2",
+	},
+	{
+		name = "music3",
+	},
+}
+
+local function play_sounds(self)
+	self.number = math.random(1, #musics)
+	pprint(self.number)
+	sound.play("#"..musics[self.number].name, nil, function ()
+		play_sounds(self)
+	end)
+end
+
+function init(self)
+	play_sounds(self)
+end
+
+function update(self, dt)
+	local sound = data.DATA.SOUND
+	if sound then
+		msg.post("#"..musics[self.number].name, "set_gain", {gain = 0.5})
+	else
+		msg.post("#"..musics[self.number].name, "set_gain", {gain = 0})
+	end
+end

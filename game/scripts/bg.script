@@ -1,0 +1,9 @@
+local areas = require "game.modules.areas"
+local data = require "game.modules.data"
+
+function init(self)
+	for i = 1, 3 do
+		local anim = areas.get_area(data.DATA.CURRENT_AREA).anim
+		sprite.play_flipbook("#sprite"..i, anim)
+	end
+end

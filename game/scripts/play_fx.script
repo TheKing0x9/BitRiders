@@ -1,0 +1,39 @@
+local areas = require "game.modules.areas"
+local data = require "game.modules.data"
+
+local WINTER = hash("winter")
+local AUTUMN = hash("autum")
+
+function init(self)
+	local anim = areas.get_area(data.DATA.CURRENT_AREA).anim
+	if anim == WINTER then
+		particlefx.play("#snow")
+	elseif anim == AUTUMN then
+		particlefx.play("#leaves")
+	end
+end
+
+function final(self)
+	-- Add finalization code here
+	-- Remove this function if not needed
+end
+
+function update(self, dt)
+	-- Add update code here
+	-- Remove this function if not needed
+end
+
+function on_message(self, message_id, message, sender)
+	-- Add message-handling code here
+	-- Remove this function if not needed
+end
+
+function on_input(self, action_id, action)
+	-- Add input-handling code here
+	-- Remove this function if not needed
+end
+
+function on_reload(self)
+	-- Add reload-handling code here
+	-- Remove this function if not needed
+end

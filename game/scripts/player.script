@@ -1,0 +1,70 @@
+--the player's data
+local data = require "game.modules.data"
+local cars = require "game.modules.cars"
+
+--messages
+local COLLISION_RESPONSE = hash("collision_response")
+local START_GAME = hash("start_game")
+
+--collsion groups
+local OBJECT = hash("object")				--the group of harmful objects
+local ROAD = hash("road")
+
+--pickups
+local COIN = hash("coin")
+local SCORE = hash("score")
+local LIFE = hash("life")
+local NITRO = hash("nitro")
+local DESTROY = hash("destroy")
+
+--hashes
+local CURRENT_CAR = hash("current_car")
+local PICKUP = hash("pickup")
+local HAZARD = hash("hazard")
+
+local function set_anim()
+	local index = data.DATA.CURRENT_CAR
+	local name = cars.get_car(index).name
+	local anim = hash(name)
+
+	sprite.play_flipbook("#sprite", anim)
+end
+
+--the INIT function 
+function init(self)
+	set_anim()
+	self.correction = vmath.vector3()
+end
+
+function update(self, dt)
+	self.correction = vmath.vector3()
+end
+
+--function that handles all the messages
+function on_message(self, message_id, message, sender)
+
+	if message_id == hash("contact_point_response") then
+		if message.group == OBJECT then
+			local type = go.get(msg.url(nil, message.other_id, "object"), "type")
+			if type == PICKUP then
+				go.delete(message.other_id)
+				local sub_type = go.get(msg.url(nil, message.other_id, "object"), "sub_type")
+				msg.post("/game#game", "activate_pickup", { type = sub_type })
+			elseif type == HAZARD then
+				if message.normal == vmath.vector3(-1, 0, 0) then
+					msg.post("/game#game", "hit", { hit_by = message.other_id})
+				else
+					--apply correction
+					if message.distance > 0 then
+						local proj = vmath.project(self.correction, message.normal * message.distance)
+						local comp = (message.distance - message.distance * proj) * message.normal
+						go.set_position(go.get_position() + comp)
+						self.correction = self.correction + comp
+					end
+				end
+			end
+		end
+	elseif message_id == COLLISION_RESPONSE then
+		
+	end
+end

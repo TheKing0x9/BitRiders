@@ -1,0 +1,161 @@
+local button = require "in.button"
+local data = require "game.modules.data"
+local cars = require "game.modules.cars"
+
+
+local PLAYER = hash("/player")
+local SET_THINGS = hash("set_things")
+local ENABLE = hash("enable")
+local POSITIONS = {
+	left = {
+		out = vmath.vector3(540+100, 0, 0),
+		enter = vmath.vector3(0)
+	},
+	title = {
+		enter = vmath.vector3(-340, 150, 0),
+		out = vmath.vector3(-500, 415, 0)
+	},
+	car = {
+		enter = vmath.vector3(-325, -130, 0),
+		out = vmath.vector3(-320-540, -130, 0)
+	}
+}
+
+
+
+local function set_texts(self, score)
+	local time_played = data.DATA.TIME_PLAYED
+
+	local h = math.ceil(time_played / (3600 * 60))
+	local min = math.ceil(time_played % 3600)
+
+	local index = data.DATA.CURRENT_CAR
+	local name = cars.get_car(index).name
+	local anim = hash(name)
+
+	local s  = "SCORE : "..string.format("%d Pt", score)
+	local name = data.DATA.NAME
+
+
+	gui.set_text(self.name, name)
+	gui.set_text(self.score, s)
+	gui.set_text(self.time, "TIME : "..h.."h"..min.."min")
+	gui.play_flipbook(self.car, anim)
+end
+
+
+local function show(self)
+	gui.set_position(self.title, POSITIONS.title.out)
+	gui.set_position(self.left, POSITIONS.left.out)
+
+	msg.post("/game#game", "hide_all")
+
+	gui.animate(self.car, gui.PROP_POSITION, POSITIONS.car.enter, gui.EASING_OUTSINE, 1, 0, function()
+		gui.animate(self.title, gui.PROP_POSITION, POSITIONS.title.enter, gui.EASING_OUTSINE, 1, 0, function()
+			gui.animate(self.left, gui.PROP_POSITION, POSITIONS.left.enter, gui.EASING_OUTSINE, 1)
+		end)
+	end)
+end
+
+local function hide(self, f)
+	gui.animate(self.left, gui.PROP_POSITION, POSITIONS.left.out, gui.EASING_OUTSINE, 1, 0, function()
+		gui.animate(self.title, gui.PROP_POSITION, POSITIONS.title.out, gui.EASING_OUTSINE, 1, 0, function()
+			gui.animate(self.car, gui.PROP_POSITION, POSITIONS.car.out, gui.EASING_OUTSINE, 1, 0, function()
+				f()
+				msg.post("/game#game", "show_all")
+			end)
+		end)
+	end)
+end
+
+local function get_nodes(self)
+	self.title = gui.get_node("title")
+	self.left = gui.get_node("left")
+
+	self.close = gui.get_node("close/icon")
+	self.car = gui.get_node("car")
+
+	self.name = gui.get_node("name")
+	self.score = gui.get_node("score")
+	self.time = gui.get_node("time")
+
+	self.shot = gui.get_node("share_it/icon")
+end
+
+function init(self)
+	get_nodes(self)
+	button.acquire()
+
+	self.temp = vmath.vector3()
+
+	button.register(self.close, function()
+		hide(self, function()
+			msg.post("#", "disable")
+			msg.post("#game_over", "enable")
+		end)
+	end)
+
+	button.register(self.shot, function()
+		gui.set_enabled(gui.get_node("share_bg"), false)
+		gui.set_enabled(gui.get_node("close_bg"), false)
+		timer.delay(0.1, false, function()
+			local buff;
+			if screenshot.html5 then
+				screenshot.html5(function(self, base64_img)
+					local f = io.open(sys.get_save_file(sys.get_config("project.title", "screenshot"), "screenshot"..(data.DATA.SCREENSHOTS)..".png"), "wb")
+					print(sys.get_save_file(sys.get_config("project.title", "screenshot"), "screenshot"..(data.DATA.SCREENSHOTS)..".png"))
+					data.DATA.SCREENSHOTS = data.DATA.SCREENSHOTS + 1
+					f:write(base64_img)
+					f:flush()
+					f:close()
+				end)
+			else
+				local png, w, h = screenshot.png()
+				local f = io.open(sys.get_save_file(sys.get_config("project.title", "screenshot"), "screenshot"..(data.DATA.SCREENSHOTS)..".png"), "wb")
+				f:write(png)
+				f:flush()
+				f:close()
+
+				if share then
+					share.file(sys.get_save_file(sys.get_config("project.title", "screenshot"), "screenshot"..(data.DATA.SCREENSHOTS)..".png"), "Racing with some bits on BitRiders. Get BitRiders here : https://theking009.itch.io/bit-riders")
+				end
+				data.DATA.SCREENSHOTS = data.DATA.SCREENSHOTS + 1
+			end
+			timer.delay(0.1, false, function()
+				gui.set_enabled(gui.get_node("share_bg"), true)
+				gui.set_enabled(gui.get_node("close_bg"), true)
+				hide(self, function()
+					msg.post("#", "disable")
+					msg.post("#game_over", "enable")
+				end)
+			end)
+		end)
+	end)
+end
+
+function final(self)
+	button.unregister(self.close)
+	button.release()
+end
+
+function update(self, dt)
+	-- Add update code here
+	-- Remove this function if not needed
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == ENABLE then
+		show(self)
+	elseif message_id == SET_THINGS then
+		set_texts(self, message.score)
+	end
+end
+
+function on_input(self, action_id, action)
+	button.on_input(action_id, action)
+end
+
+function on_reload(self)
+	-- Add input-handling code here
+	-- Remove this function if not needed
+end
